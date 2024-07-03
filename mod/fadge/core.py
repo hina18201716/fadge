@@ -71,10 +71,26 @@ class GRRT:
         self.KSd = KSd
 
     def set_particle(self, x, v):
-        x = np.asarray(x)
+         x = np.asarray(x)
         v = np.asarray(v)
-        self._ic    = np.array([x, self.normalize(x, v)])
+
+        # 
+        R = np.sqrt( x[1]**2 + x[2]**2 + x[3]**2 ) 
+        l = R * R - self.aspin**2
+        
+        r = np.sqrt( 1/2 * np.sqrt( l + l*l + 4 * self.aspin**2 * x[3]**2 ) ) 
+        theta = np.arccos(x[3]/r)
+        phi = np.arctan2((x[1]*self.aspin + x[2]*r), (x[1]*r - x[2]*self.aspin))
+
+        v_spherical = np.array(
+            v[1]*np.sin(theta) + v[2]*np.cos(theta)*np.sin(phi) + v[3]*np.cos(theta)*np.cos(phi),
+            v[1]*np.sin(theta) + v[2]*np.cos(theta)*np.sin(phi) + v[3]*np.cos(theta)*np.cos(phi),
+            v[1]*np.cos(theta) - v[2]*np.sin(theta)*np.sin(phi) - v[3]*np.sin(theta)*np.cos(phi) -v[1]*np.sin(phi) + v[2]*np.cos(phi)
+        )
+        
+        self._ic    = np.array([[0,r,theta,phi], v_spherical])
         self.kwargs = {'L':100, 'h':1, **self.kwargs}
+
 
     def set_photon(self, x, v):
         x = np.asarray(x)
