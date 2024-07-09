@@ -20,7 +20,7 @@
 from jax import numpy as np
 from jax.experimental.maps import xmap
 
-from .metric import KerrSchild
+from .metric import SpericalKS
 from .geode  import Geode
 from .utils  import Nullify, Normalize
 from .icond  import cam, sphorbit
@@ -33,9 +33,9 @@ class GRRT:
         self.dtype   = dtype
         self.kwargs  = kwargs
 
-        self.metric    = KerrSchild(aspin)
+        self.metric    = SpericalKS(aspin)
         self.nullify   = Nullify(self.metric)
-        self.normalize = Normalize(self.metric)
+        # self.normalize = Normalize(self.metric)
 
         self.reh    = np.nan
         self._geode = None
@@ -67,13 +67,25 @@ class GRRT:
     def set_particle(self, x, v):
         x = np.asarray(x)
         v = np.asarray(v)
-        self._ic    = np.array([x, self.normalize(x, v)])
+        self._ic    = np.array([x, self.normalize(xß, v)])
         self.kwargs = {'L':100, 'h':1, **self.kwargs}
 
     def set_photon(self, x, v):
         x = np.asarray(x)
-        v = np.asarray(v)
-        self._ic    = np.array([x, self.nullify(x, v)])
+        R = np.sqrt( x[1]**2 + x[2]**2 + x[3]**2 ) 
+        l = R * R - self.aspin**2
+        
+        r = np.sqrt( 1/2 * np.sqrt( l + l*l + 4 * self.aspin**2 * x[3]**2 ) ) 
+        theta = np.arccos(x[3]/r)
+        phi = np.arctan2((x[1]*self.aspin + x[2]*r), (x[1]*r - x[2]*self.aspin))
+
+        # v = np.array(
+        #     v[1]*np.sin(theta) + v[2]*np.cos(theta)*np.sin(phi) + v[3]*np.cos(theta)*np.cos(phi),
+        #     v[1]*np.sin(theta) + v[2]*np.cos(theta)*np.sin(phi) + v[3]*np.cos(theta)*np.cos(phi),
+        #     v[1]*np.cos(theta) - v[2]*np.sin(theta)*np.sin(phi) - v[3]*np.sin(theta)*np.cos(phi) -v[1]*np.sin(phi) + v[2]*np.cos(phi)
+        # )
+        
+        self._ic    = np.array([[0,r,theta,phi], v])
         self.kwargs = {'L':100, 'h':1, **self.kwargs}
 
     def set_sphorbit(self, r=3):
